@@ -1,0 +1,125 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "srvcs-hexagonalnumber",
+    "description": "",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [],
+        "summary": "`GET /` — service identity (srvcs service standard).",
+        "operationId": "index",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [],
+        "summary": "`POST /` — compute the `n`th hexagonal number `H(n) = n * (2n - 1)`.",
+        "description": "This service owns the *control flow* but delegates the defining product to\nits dependency, exactly as specified:\n\n1. read `n = value`;\n2. compute `m = 2n - 1` locally (index arithmetic);\n3. ask `srvcs-multiply` for `result = n * m`.\n\nIf the dependency is unreachable it reports itself degraded (`503`); if it\nrejects the input it forwards the `422`.",
+        "operationId": "evaluate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HexagonalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a dependency rejected the input (forwarded)"
+          },
+          "500": {
+            "description": "a dependency returned a malformed result"
+          },
+          "503": {
+            "description": "a dependency is unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EvalRequest": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "HexagonalResponse": {
+        "type": "object",
+        "required": [
+          "value",
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "value": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Info": {
+        "type": "object",
+        "required": [
+          "service",
+          "concern",
+          "depends_on"
+        ],
+        "properties": {
+          "concern": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "service": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
