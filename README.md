@@ -1,77 +1,74 @@
 # srvcs-hexagonalnumber
 
-Sequences microservice for srvcs.cloud: computes the **nth hexagonal number**.
+## Name
 
-## Concern
+| Field | Value |
+| --- | --- |
+| Service | `srvcs-hexagonalnumber` |
+| Slug | `hexagonalnumber` |
+| Repository | `srvcs/hexagonalnumber` |
+| Package | `srvcs-hexagonalnumber` |
+| Kind | `orchestrator` |
 
-`sequences: nth hexagonal number`
+## Function
 
-The hexagonal numbers are the figurate numbers `H(n) = n * (2n - 1)`:
-`1, 6, 15, 28, 45, 66, ...` (for `n = 1, 2, 3, ...`).
-
-## Algorithm
-
-Given `n = value` (an `i64`):
-
-1. compute `m = 2n - 1` locally (index arithmetic);
-2. ask `srvcs-multiply` for `result = n * m`.
-
-So `H(5) = 5 * 9 = 45` and `H(1) = 1 * 1 = 1`.
-
-This service is an **orchestrator**: the defining product is delegated to a
-dependency service over HTTP. It never calls `srvcs-isnumber` directly —
-validation propagates from its dependency (a forwarded `422`).
+sequences: nth hexagonal number
 
 ## Dependencies
 
-| Service          | Purpose                           | URL env var          | Default                 |
-| ---------------- | --------------------------------- | -------------------- | ----------------------- |
-| `srvcs-multiply` | the defining product `n * (2n-1)` | `SRVCS_MULTIPLY_URL` | `http://127.0.0.1:8092` |
+| Dependency | Repository |
+| --- | --- |
+| `srvcs-multiply` | [srvcs/multiply](https://github.com/srvcs/multiply) |
 
 ## API
 
-### `GET /` — identity
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Service identity |
+| `POST` | `/` | Evaluate the service function |
+| `GET` | `/healthz` | Liveness probe |
+| `GET` | `/readyz` | Readiness probe |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/openapi.json` | OpenAPI document |
 
-```json
-{
-  "service": "srvcs-hexagonalnumber",
-  "concern": "sequences: nth hexagonal number",
-  "depends_on": ["srvcs-multiply"]
-}
-```
+## Inputs
 
-### `POST /` — evaluate
+| Name | Type | Required |
+| --- | --- | --- |
+| `value` | `integer` | yes |
 
-Request:
+## Outputs
 
-```json
-{ "value": 5 }
-```
+| Name | Type |
+| --- | --- |
+| `value` | `integer` |
+| `result` | `integer` |
 
-Response `200`:
+## Configuration
 
-```json
-{ "value": 5, "result": 45 }
-```
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SRVCS_BIND_ADDR` | `0.0.0.0:8080` | Bind address |
+| `SRVCS_ENV` | `development` | Environment label for logs |
+| `RUST_LOG` | `info,tower_http=info` | Tracing filter |
+| `SRVCS_MULTIPLY_URL` | `http://127.0.0.1:8092` | Base URL for srvcs-multiply |
 
-Error responses:
+## Error Behavior
 
-- `422` — a dependency rejected the input (forwarded verbatim).
-- `500` — a dependency returned a malformed result (missing integer `result`).
-- `503` — a dependency is unavailable (degraded).
+- `422` means the request could not be evaluated for the documented input shape.
+- `503` means a required dependency was unavailable or returned an unexpected response.
+- Dependency validation errors are forwarded when this service delegates validation.
 
-## Other endpoints
-
-- `GET /healthz` — liveness
-- `GET /readyz` — readiness
-- `GET /metrics` — Prometheus metrics
-- `GET /openapi.json` — OpenAPI document
-
-## Development
+## Local Checks
 
 ```sh
-UPDATE_OPENAPI=1 cargo test --offline --test openapi_snapshot
-cargo fmt && cargo fmt --check
-cargo clippy --offline --all-targets -- -D warnings
-cargo test --offline
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
+
+See the [srvcs service standard](https://github.com/srvcs/platform/blob/main/STANDARD.md) for the full operational contract.
+
+## Metadata
+
+Machine-readable service metadata lives in `srvcs.yaml`. Keep it aligned with this README when the service contract changes.
